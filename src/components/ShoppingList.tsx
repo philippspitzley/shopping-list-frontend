@@ -27,58 +27,61 @@ export default function ShoppingList() {
     ;(async () => {
       await fetchItems()
     })()
+  }, [fetchItems])
+
+  const addItem = useCallback(async (formData: FormData) => {
+    const itemName = formData.get('item')
+
+    if (typeof itemName === 'string' && itemName.trim() !== '') {
+      const { data: newItem, error } = await api.createItem({
+        name: itemName,
+      })
+
+      setError('')
+
+      if (error && error instanceof Error) {
+        setError(error.message)
+      }
+
+      if (newItem) {
+        setItems((prev) => [...prev, newItem])
+      }
+    }
+    inputRef.current?.focus()
   }, [])
 
-  const addItem = useCallback(
-    async (formData: FormData) => {
-      const itemName = formData.get('item')
+  const removeItem = useCallback(
+    async (itemId: string) => {
+      const { success, error } = await api.deleteItem(itemId)
 
-      if (typeof itemName === 'string' && itemName.trim() !== '') {
-        const { data: newItem, error } = await api.createItem({
-          name: itemName,
-        })
+      if (error && error instanceof Error) {
+        setError(error.message)
+      }
 
-        setError('')
-
-        if (error && error instanceof Error) {
-          setError(error.message)
-        }
-
-        if (newItem) {
-          setItems([...items, newItem])
-        }
+      if (success) {
+        await fetchItems()
       }
       inputRef.current?.focus()
     },
-    [items],
+    [fetchItems],
   )
 
-  const removeItem = async (itemId: string) => {
-    const { success, error } = await api.deleteItem(itemId)
+  const toggleBuyItem = useCallback(
+    async (item: ShoppingItem) => {
+      const { success, error } = await api.buyItem(item._id, {
+        bought: !item.bought,
+      })
 
-    if (error && error instanceof Error) {
-      setError(error.message)
-    }
+      if (error && error instanceof Error) {
+        setError(error.message)
+      }
 
-    if (success) {
-      await fetchItems()
-    }
-    inputRef.current?.focus()
-  }
-
-  const toggleBuyItem = async (item: ShoppingItem) => {
-    const { success, error } = await api.buyItem(item._id, {
-      bought: !item.bought,
-    })
-
-    if (error && error instanceof Error) {
-      setError(error.message)
-    }
-
-    if (success) {
-      await fetchItems()
-    }
-  }
+      if (success) {
+        await fetchItems()
+      }
+    },
+    [fetchItems],
+  )
 
   return (
     <div className="flex flex-row items-center justify-center pt-12">
